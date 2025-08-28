@@ -1,0 +1,58 @@
+<div class="p-5">
+  <button
+    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-3xl font-bold p-2"
+    (click)="closeModal()"
+  >
+    ✕
+  </button>
+
+  <!-- Post -->
+  <ng-container *ngIf="post$ | async as post">
+    <h2 class="text-2xl font-bold mb-2">{{ post.title }}</h2>
+    <p class="text-gray-700 mb-4">{{ post.body }}</p>
+
+    <div class="text-xs text-gray-500 mb-4 space-y-1">
+      <div><strong>Data:</strong> {{ post.date | date:'dd/MM/yyyy' }}</div>
+      <div><strong>Autor:</strong> {{ post.author }}</div>
+      <div><strong>Empresa:</strong> {{ post.company }}</div>
+      <div><strong>Status:</strong> {{ post.status }}</div>
+    </div>
+  </ng-container>
+
+  <hr class="my-4 border-gray-200">
+
+  <!-- Comentários -->
+  <div class="flex flex-col gap-3">
+    <h3 class="font-semibold text-lg">Comentários</h3>
+
+    <ng-container *ngIf="comments$ | async as comments; else loadingComments">
+      <div *ngFor="let comment of comments" class="border rounded-2xl p-4 bg-gray-50">
+        <div class="flex justify-between items-start">
+          <span class="font-semibold">{{ comment.name }}</span>
+          <button class="text-red-500 text-sm ml-2" (click)="deleteComment(comment.id)">✕</button>
+        </div>
+        <p class="mt-2 text-gray-700 text-sm">{{ comment.body }}</p>
+      </div>
+    </ng-container>
+
+    <ng-template #loadingComments>
+      <div class="text-gray-400 italic">Carregando comentários...</div>
+    </ng-template>
+  </div>
+
+  <!-- Formulário de novo comentário -->
+  <div class="mt-4 flex gap-2">
+    <input
+      type="text"
+      [(ngModel)]="newCommentText"
+      placeholder="Escreva um comentário..."
+      class="flex-1 border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+    />
+    <button
+      class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+      (click)="addComment()"
+    >
+      Enviar
+    </button>
+  </div>
+</div>

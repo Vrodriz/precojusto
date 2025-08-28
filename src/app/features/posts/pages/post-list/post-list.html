@@ -1,0 +1,105 @@
+<div class="flex flex-col gap-6">
+  <!-- Pesquisa e filtros -->
+  <div class="flex flex-col sm:flex-row justify-between gap-4">
+    <input
+      type="text"
+      placeholder="Buscar por título ou descrição..."
+      (input)="onSearch($event.target.value)"
+      class="w-full sm:w-1/2 border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+    />
+
+    <select
+      [ngModel]="sortBy$ | async"
+      (ngModelChange)="onSort($event)"
+      class="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+    >
+      <option value="date">Mais recentes</option>
+      <option value="title">Título (A-Z)</option>
+      <option value="status">Status</option>
+    </select>
+  </div>
+
+  <!-- Lista de posts -->
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <ng-container *ngIf="paginatedPosts$ | async as posts; else loadingPosts">
+      <div
+        *ngFor="let post of posts"
+        class="border rounded-2xl shadow-md hover:shadow-lg transition flex flex-col justify-between p-5 min-h-[18rem] bg-white"
+      >
+        <div class="space-y-2">
+          <h3 class="text-lg font-bold truncate">{{ post.title }}</h3>
+          <p class="text-gray-600 text-sm line-clamp-3 leading-relaxed">{{ post.body }}</p>
+          <div class="text-xs text-gray-500 mt-2 space-y-1">
+            <div><strong>Data:</strong> {{ post.date | date : 'dd/MM/yyyy' }}</div>
+            <div><strong>Autor:</strong> {{ post.author || 'Consumidor' }}</div>
+            <div><strong>Empresa:</strong> {{ post.company || 'Empresa' }}</div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <span
+            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold"
+            [ngClass]="{
+              'bg-green-100 text-green-800': post.status === 'Resolvida',
+              'bg-yellow-100 text-yellow-800': post.status === 'Em andamento',
+              'bg-red-100 text-red-800': post.status === 'Não respondida'
+            }"
+          >
+            {{ post.status || 'Em análise' }}
+          </span>
+
+          <button
+            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            (click)="viewPost(post.id)"
+          >
+            Comentários
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #loadingPosts>
+      <div class="text-gray-400 italic">Carregando posts...</div>
+    </ng-template>
+  </div>
+
+  <!-- Paginação -->
+  <div
+    class="flex justify-center gap-3 mt-6 items-center"
+    *ngIf="filteredPosts$ | async as filtered"
+  >
+    <button
+      class="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+      [disabled]="((currentPage$ | async) ?? 1) === 1"
+      (click)="prevPage()"
+    >
+      Anterior
+    </button>
+
+    <span class="text-sm text-gray-600">
+      Página {{ (currentPage$ | async) ?? 1 }} de {{ totalPages(filtered?.length ?? 0) }}
+    </span>
+
+    <button
+      class="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+      [disabled]="((currentPage$ | async) ?? 1) >= totalPages(filtered?.length ?? 0)"
+      (click)="nextPage(totalPages(filtered?.length ?? 0))"
+    >
+      Próxima
+    </button>
+  </div>
+
+  <!-- Modal -->
+  <div
+    *ngIf="modalPostId"
+    class="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex justify-center items-start pt-20 z-50"
+    (click)="closeModal()"
+  >
+    <div
+      class="bg-white w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-y-auto relative animate-fade-in scale-95 origin-top transition-transform"
+      (click)="$event.stopPropagation()"
+    >
+      <app-post-detail [postId]="modalPostId" (close)="closeModal()"></app-post-detail>
+    </div>
+  </div>
+</div>
