@@ -1,59 +1,119 @@
-# Precojusto
+# 📌 Preço Justo -- Desafio Técnico Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.2.1.
+## 🚀 Sobre o projeto
 
-## Development server
+Aplicação Angular desenvolvida como parte do desafio técnico **Preço
+Justo**.\
+O objetivo foi construir um sistema de gerenciamento de **Posts** e
+**Comentários**, consumindo a API pública
+[JSONPlaceholder](https://jsonplaceholder.typicode.com/).
 
-To start a local development server, run:
+A aplicação segue boas práticas de Angular, RxJS e arquitetura limpa,
+priorizando experiência do usuário, organização do código e
+acessibilidade.
 
-```bash
+------------------------------------------------------------------------
+
+## ⚙️ Funcionalidades
+
+### 📄 Posts
+
+-   ✅ Listar posts com **paginação, busca e ordenação**\
+-   ✅ Visualizar detalhes de um post em modal\
+-   ✅ Criar posts (**update otimista**)\
+-   ✅ Editar posts via modal com formulário reativo\
+-   ✅ Excluir posts com confirmação e rollback em caso de erro
+
+### 💬 Comentários
+
+-   ✅ Listar comentários de um post\
+-   ✅ Adicionar novo comentário (**update otimista**)\
+-   ✅ Editar comentário inline (**simulação no cache in-memory**)\
+-   ✅ Excluir comentário (**update otimista**)
+
+> ⚠️ **Observação**: a API JSONPlaceholder não oferece
+> `PUT /comments/:id`.\
+> Por isso, a edição de comentários foi **simulada apenas no cache
+> in-memory**, mantendo a interface funcional.
+
+------------------------------------------------------------------------
+
+## 🛠️ Tecnologias utilizadas
+
+-   [Angular 17+](https://angular.io/)\
+-   [RxJS](https://rxjs.dev/)\
+-   [Tailwind CSS](https://tailwindcss.com/)\
+-   [TypeScript](https://www.typescriptlang.org/)\
+-   API pública:
+    [JSONPlaceholder](https://jsonplaceholder.typicode.com/)
+
+------------------------------------------------------------------------
+
+## 📂 Estrutura de pastas
+
+``` bash
+src/app/
+  core/
+    interceptors/   # BaseUrlInterceptor + ErrorInterceptor
+  models/           # interfaces/DTOs
+  features/
+    post-list/      # listagem de posts
+    post-detail/    # detalhe + comentários
+    post-edit/      # modal de edição de post
+```
+
+------------------------------------------------------------------------
+
+## 🧩 Arquitetura & Boas Práticas
+
+-   ✅ **Standalone Components**\
+-   ✅ **AsyncPipe** para evitar `subscribe` manuais em componentes\
+-   ✅ **BehaviorSubject** para cache in-memory de posts e comentários\
+-   ✅ **Update otimista + rollback** em caso de erro\
+-   ✅ **Paginação, busca e ordenação client-side**\
+-   ✅ **Interceptors globais** (Base URL + tratamento de erros)\
+-   ✅ **Design responsivo** com Tailwind CSS\
+-   ✅ **Acessibilidade básica** (`aria`, navegação via teclado, modais
+    com foco)
+
+------------------------------------------------------------------------
+
+## ▶️ Como executar o projeto
+
+### 1. Clonar o repositório
+
+``` bash
+git clone https://github.com/seu-usuario/preco-justo-angular.git
+cd precojusto
+```
+
+### 2. Instalar dependências
+
+``` bash
+npm install
+```
+
+### 3. Rodar o servidor de desenvolvimento
+
+``` bash
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Acesse em: <http://localhost:4200>
 
-## Code scaffolding
+------------------------------------------------------------------------
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 📌 Observações finais
 
-```bash
-ng generate component component-name
-```
+-   A API JSONPlaceholder não suporta atualização real de
+    **comentários** (`PUT`/`PATCH`).\
+    → Implementação feita em **cache local (in-memory)** para manter a
+    interface funcional.\
+-   Para **posts (`/posts`)**, todas as operações CRUD foram
+    implementadas com chamadas reais à API + cache otimista.\
+-   Interceptors configurados para **base URL automática** e
+    **tratamento global de erros**.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+------------------------------------------------------------------------
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+✨ Projeto desenvolvido como parte do desafio técnico **Preço Justo**.
