@@ -1,194 +1,128 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, map, tap, shareReplay } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
+import { tap, map, delay } from 'rxjs/operators';
 import { Post } from '../models/post';
 import { Comment, CreateComment } from '../models/comment';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class PostService {
-  private apiUrl = 'https://jsonplaceholder.typicode.com';
-  private postsCache$ = new BehaviorSubject<Post[]>([]);
-  public readonly posts$ = this.postsCache$.asObservable();
+  private postsSubject = new BehaviorSubject<Post[]>([]);
+  posts$ = this.postsSubject.asObservable();
 
-  private commentsCache: { [postId: number]: BehaviorSubject<Comment[]> } = {};
+  
+  private commentsCache = new Map<number, BehaviorSubject<Comment[]>>();
 
   constructor(private http: HttpClient) {}
 
-  // ------------------------------
-  // Helpers
-  // ------------------------------
-  private enrichPost(p: Post): Post {
-    return {
-      ...p,
-      date: (p as any).date ?? new Date().toISOString(),
-      author: (p as any).author ?? `Usuário ${p.userId}`,
-      company: (p as any).company ?? `Empresa ${p.userId}`,
-      status: (p as any).status ?? 'Em andamento',
-    } as Post;
-  }
-
-  private enrichMany(posts: Post[]): Post[] {
-    return posts.map((p) => this.enrichPost(p));
-  }
-
-  // ------------------------------
+  // ======================
   // POSTS
-  // ------------------------------
-  getPosts(): Observable<Post[]> {
-    if (this.postsCache$.value.length > 0) {
-      return this.postsCache$.asObservable();
-    }
+  // ======================
 
-    return this.http.get<Post[]>(`${this.apiUrl}/posts`).pipe(
-      map((posts) => this.enrichMany(posts)),
-      tap((posts) => this.postsCache$.next(posts)),
-      catchError((err) => {
-        console.error('Erro ao carregar posts', err);
-        this.postsCache$.next([]);
-        return of([]);
+  loadPosts(): void {
+    this.http.get<Post[]>('posts').pipe(
+      tap(posts => this.postsSubject.next(posts))
+    ).subscribe();
+  }
+
+  getPostById(id: number): Observable<Post | undefined> {
+    return this.posts$.pipe(
+      tap(posts => {
+        if (!posts.length) {
+          this.loadPosts();
+        }
       }),
-      shareReplay(1)
+      map(posts => posts.find(p => p.id === id))
     );
   }
 
-  getPost(id: number): Observable<Post> {
-    const cached = this.postsCache$.value.find((p) => p.id === id);
-    if (cached) return of(cached);
+  createPost(newPost: Post): Observable<Post> {
+    const current = this.postsSubject.value;
+    const optimisticPost = { ...newPost, id: Date.now() }; 
+    this.postsSubject.next([...current, optimisticPost]);
 
-    return this.http.get<Post>(`${this.apiUrl}/posts/${id}`).pipe(map((p) => this.enrichPost(p)));
-  }
-
-  createPost(post: Omit<Post, 'id'>): Observable<Post[]> {
-    const tempId = Date.now();
-    const optimisticPost: Post = this.enrichPost({ ...(post as Post), id: tempId });
-
-    const oldPosts = [...this.postsCache$.value];
-    this.postsCache$.next([optimisticPost, ...oldPosts]);
-
-    return this.http.post<Post>(`${this.apiUrl}/posts`, post).pipe(
-      tap((created) => {
-        const updated = this.postsCache$.value.map((p) =>
-          p.id === tempId
-            ? this.enrichPost({
-                ...p,
-                ...created,
-                id: created.id,
-              } as Post)
-            : p
+    return this.http.post<Post>('posts', newPost).pipe(
+      tap(saved => {
+        const updated = this.postsSubject.value.map(p =>
+          p.id === optimisticPost.id ? saved : p
         );
-        this.postsCache$.next(updated);
-      }),
-      map(() => this.postsCache$.value),
-      catchError((err) => {
-        this.postsCache$.next(oldPosts);
-        return throwError(() => err);
+        this.postsSubject.next(updated);
       })
     );
   }
 
-  updatePost(id: number, changes: Partial<Post>): Observable<Post[]> {
-    const oldPosts = [...this.postsCache$.value];
+  updatePost(post: Post): Observable<Post> {
+    const current = this.postsSubject.value;
+    const updatedPosts = current.map(p => (p.id === post.id ? post : p));
+    this.postsSubject.next(updatedPosts);
 
-    const updatedPosts = oldPosts.map((p) =>
-      p.id === id ? this.enrichPost({ ...p, ...changes } as Post) : p
-    );
-
-    this.postsCache$.next(updatedPosts);
-
-    return this.http.put<Post>(`${this.apiUrl}/posts/${id}`, changes).pipe(
-      tap((server) => {
-        const finalPosts = this.postsCache$.value.map((p) =>
-          p.id === id ? this.enrichPost({ ...p, ...server } as Post) : p
-        );
-        this.postsCache$.next(finalPosts);
-      }),
-      map(() => this.postsCache$.value),
-      catchError((err) => {
-        this.postsCache$.next(oldPosts);
-        return throwError(() => err);
-      })
-    );
+    return this.http.put<Post>(`posts/${post.id}`, post);
   }
 
-  deletePost(id: number): Observable<Post[]> {
-    const oldPosts = [...this.postsCache$.value];
-    const updatedPosts = oldPosts.filter((p) => p.id !== id);
+  deletePost(id: number): Observable<void> {
+    const current = this.postsSubject.value;
+    const filtered = current.filter(p => p.id !== id);
+    this.postsSubject.next(filtered);
 
-    this.postsCache$.next(updatedPosts);
-
-    return this.http.delete<void>(`${this.apiUrl}/posts/${id}`).pipe(
-      map(() => this.postsCache$.value),
-      catchError((err) => {
-        this.postsCache$.next(oldPosts);
-        return throwError(() => err);
-      })
-    );
+    return this.http.delete<void>(`posts/${id}`);
   }
 
-  // ------------------------------
-  // COMMENTS
-  // ------------------------------
+  // ======================
+  // COMENTÁRIOS
+  // ======================
+
   getComments(postId: number): Observable<Comment[]> {
-    if (!this.commentsCache[postId]) {
-      this.commentsCache[postId] = new BehaviorSubject<Comment[]>([]);
+    if (!this.commentsCache.has(postId)) {
+      const subject = new BehaviorSubject<Comment[]>([]);
+      this.commentsCache.set(postId, subject);
 
-      this.http
-        .get<Comment[]>(`${this.apiUrl}/posts/${postId}/comments`)
-        .pipe(
-          tap((comments) => this.commentsCache[postId].next(comments)),
-          catchError((err) => {
-            console.error(`Erro ao carregar comentários do post ${postId}`, err);
-            return of([]);
-          })
-        )
-        .subscribe();
+      this.http.get<Comment[]>(`posts/${postId}/comments`).pipe(
+        tap(comments => subject.next(comments))
+      ).subscribe();
     }
-    return this.commentsCache[postId].asObservable();
+    return this.commentsCache.get(postId)!.asObservable();
   }
 
-  addComment(postId: number, comment: CreateComment): Observable<Comment[]> {
+  addComment(postId: number, comment: CreateComment): Observable<Comment> {
+    const subject = this.commentsCache.get(postId)!;
+    const current = subject.value;
+
     const optimisticComment: Comment = {
+      ...comment,
       id: Date.now(),
       postId,
-      ...comment,
-      userId: 0,
+      userId: 0
     };
+    subject.next([...current, optimisticComment]);
 
-    if (!this.commentsCache[postId]) {
-      this.commentsCache[postId] = new BehaviorSubject<Comment[]>([]);
-    }
-
-    const oldComments = [...this.commentsCache[postId].value];
-    this.commentsCache[postId].next([optimisticComment, ...oldComments]);
-
-    return this.http.post<Comment>(`${this.apiUrl}/comments`, { postId, ...comment }).pipe(
-      tap((created) => {
-        const filtered = this.commentsCache[postId].value.filter(
-          (c) => c.id !== optimisticComment.id
+    return this.http.post<Comment>(`posts/${postId}/comments`, comment).pipe(
+      tap(saved => {
+        const updated = subject.value.map(c =>
+          c.id === optimisticComment.id ? saved : c
         );
-        this.commentsCache[postId].next([created, ...filtered]);
-      }),
-      map(() => this.commentsCache[postId].value),
-      catchError((err) => {
-        this.commentsCache[postId].next(oldComments);
-        return throwError(() => err);
+        subject.next(updated);
       })
     );
   }
 
-  deleteComment(postId: number, commentId: number): Observable<Comment[]> {
-    if (!this.commentsCache[postId]) return of([]);
+  deleteComment(postId: number, commentId: number): Observable<void> {
+    const subject = this.commentsCache.get(postId)!;
+    const current = subject.value;
 
-    const oldComments = [...this.commentsCache[postId].value];
-    this.commentsCache[postId].next(oldComments.filter((c) => c.id !== commentId));
+    subject.next(current.filter(c => c.id !== commentId));
 
-    return this.http.delete<void>(`${this.apiUrl}/comments/${commentId}`).pipe(
-      map(() => this.commentsCache[postId].value),
-      catchError((err) => {
-        this.commentsCache[postId].next(oldComments);
-        return throwError(() => err);
-      })
-    );
+    return this.http.delete<void>(`comments/${commentId}`);
+  }
+
+  updateComment(postId: number, comment: Comment): Observable<Comment> {
+    const subject = this.commentsCache.get(postId)!;
+    const current = subject.value;
+
+    const updatedComments = current.map(c => (c.id === comment.id ? comment : c));
+    subject.next(updatedComments);
+
+    return of(comment).pipe(delay(500));
   }
 }

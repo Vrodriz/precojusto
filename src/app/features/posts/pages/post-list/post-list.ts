@@ -7,11 +7,12 @@ import { map } from 'rxjs/operators';
 import { PostService } from '../../services/post.service';
 import { Post } from '../../models/post';
 import { PostDetailComponent } from '../post-detail/post-detail';
+import { PostEditComponent } from '../post-edit/post-edit';
 
 @Component({
   selector: 'app-post-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, PostDetailComponent],
+  imports: [CommonModule, FormsModule, PostDetailComponent, PostEditComponent],
   templateUrl: './post-list.html',
   styleUrls: ['./post-list.css'],
 })
@@ -27,12 +28,11 @@ export class PostListComponent implements OnInit {
   pageSize = 6;
   modalPostId: number | null = null;
 
-  constructor(private postService: PostService, private router: Router) {}
+  constructor(private postService: PostService) {}
 
   ngOnInit(): void {
+    this.postService.loadPosts();
     this.posts$ = this.postService.posts$;
-    this.postService.getPosts().subscribe(); 
-    this.posts$ = this.postService.getPosts();
 
     const filtered$ = combineLatest([this.posts$, this.searchTerm$, this.sortBy$]).pipe(
       map(([posts, searchTerm, sortBy]) => {
@@ -46,9 +46,11 @@ export class PostListComponent implements OnInit {
           );
         }
 
-        if (sortBy === 'title') result.sort((a, b) => a.title.localeCompare(b.title));
-        else if (sortBy === 'status')
+        if (sortBy === 'title') {
+          result.sort((a, b) => a.title.localeCompare(b.title));
+        } else if (sortBy === 'status') {
           result.sort((a, b) => (a.status || '').localeCompare(b.status || ''));
+        }
 
         return result;
       })
@@ -65,22 +67,16 @@ export class PostListComponent implements OnInit {
   }
 
   deletePost(id: number) {
-  const confirmed = confirm('Tem certeza que deseja excluir este post?');
-  if (!confirmed) return;
+    const confirmed = confirm('Tem certeza que deseja excluir este post?');
+    if (!confirmed) return;
 
-  this.postService.deletePost(id).subscribe({
-    next: () => {
-      this.posts$ = this.posts$.pipe(
-        map(posts => posts.filter((post: Post) => post.id !== id))
-      );
-    },
-    error: (err) => {
-      console.error('Erro ao excluir post:', err);
-      alert('Não foi possível excluir o post. Tente novamente.');
-    }
-  });
-}
-
+    this.postService.deletePost(id)?.subscribe({
+      error: (err: string) => {
+        console.error('Erro ao excluir post:', err);
+        alert('Não foi possível excluir o post. Tente novamente.');
+      },
+    });
+  }
 
   onSearch(term: string) {
     this.searchTerm$.next(term);
@@ -100,6 +96,16 @@ export class PostListComponent implements OnInit {
     const current = this.currentPage$.value;
     if (current < totalPages) this.setPage(current + 1);
   }
+editingPost: Post | null = null;
+
+editPost(post: Post) {
+  this.editingPost = post;
+}
+
+closeEditModal() {
+  this.editingPost = null;
+}
+
 
   prevPage() {
     const current = this.currentPage$.value;

@@ -36,7 +36,7 @@
 
         <div class="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <span
-            class="inline-flex items-center text-center p-6 py-1 rounded-full text-xs font-semibold"
+            class="inline-flex items-center border bg-amber-100 text-center p-6 py-1 rounded-full text-xs font-semibold"
             [ngClass]="{
               'bg-green-100 text-green-800': post.status === 'Resolvida',
               'bg-yellow-100 text-yellow-800': post.status === 'Em andamento',
@@ -47,6 +47,13 @@
           </span>
 
           <div class="flex flex-row gap-2 sm:ml-auto sm:justify-end w-full">
+            <button
+              class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors shadow"
+              (click)="editPost(post)"
+            >
+              Editar
+            </button>
+
             <button
               class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow"
               (click)="viewPost(post.id)"
@@ -102,6 +109,18 @@
       (click)="$event.stopPropagation()"
     >
       <app-post-detail [postId]="modalPostId" (close)="closeModal()"></app-post-detail>
+    </div>
+  </div>
+  <div
+    *ngIf="editingPost"
+    class="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex justify-center items-start pt-20 z-50"
+    (click)="closeEditModal()"
+  >
+    <div
+      class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-y-auto relative"
+      (click)="$event.stopPropagation()"
+    >
+      <app-post-edit [post]="editingPost" (close)="closeEditModal()"></app-post-edit>
     </div>
   </div>
 </div>

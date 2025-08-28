@@ -1,1 +1,48 @@
-<p>post-edit works!</p>
+<div class="p-6 space-y-4">
+  <h2 class="text-xl font-bold">Editar Post</h2>
+
+  <form [formGroup]="form" (ngSubmit)="save()" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium">Título</label>
+      <input
+        formControlName="title"
+        type="text"
+        class="w-full border rounded-lg px-4 py-2"
+        [class.border-red-500]="form.get('title')?.invalid && form.get('title')?.touched"
+      />
+      <small *ngIf="form.get('title')?.invalid && form.get('title')?.touched" class="text-red-500">
+        O título é obrigatório (mínimo 3 caracteres).
+      </small>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">Conteúdo</label>
+      <textarea
+        formControlName="body"
+        rows="4"
+        class="w-full border rounded-lg px-4 py-2"
+        [class.border-red-500]="form.get('body')?.invalid && form.get('body')?.touched"
+      ></textarea>
+      <small *ngIf="form.get('body')?.invalid && form.get('body')?.touched" class="text-red-500">
+        O corpo é obrigatório (mínimo 10 caracteres).
+      </small>
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="cancel()"
+        class="px-4 py-2 border rounded-lg"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        [disabled]="form.invalid || loading"
+        class="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+      >
+        {{ loading ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </form>
+</div>
