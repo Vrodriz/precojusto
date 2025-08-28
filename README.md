@@ -83,7 +83,7 @@ src/app/
 ### 1. Clonar o repositório
 
 ``` bash
-git clone https://github.com/seu-usuario/preco-justo-angular.git
+https://github.com/seu-usuario/precojusto.git
 cd precojusto
 ```
 
