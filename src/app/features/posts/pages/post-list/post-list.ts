@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
-
 import { PostService } from '../../services/post.service';
 import { Post } from '../../models/post';
 import { PostDetailComponent } from '../post-detail/post-detail';
@@ -31,6 +30,8 @@ export class PostListComponent implements OnInit {
   constructor(private postService: PostService, private router: Router) {}
 
   ngOnInit(): void {
+    this.posts$ = this.postService.posts$;
+    this.postService.getPosts().subscribe(); 
     this.posts$ = this.postService.getPosts();
 
     const filtered$ = combineLatest([this.posts$, this.searchTerm$, this.sortBy$]).pipe(
@@ -62,6 +63,24 @@ export class PostListComponent implements OnInit {
       })
     );
   }
+
+  deletePost(id: number) {
+  const confirmed = confirm('Tem certeza que deseja excluir este post?');
+  if (!confirmed) return;
+
+  this.postService.deletePost(id).subscribe({
+    next: () => {
+      this.posts$ = this.posts$.pipe(
+        map(posts => posts.filter((post: Post) => post.id !== id))
+      );
+    },
+    error: (err) => {
+      console.error('Erro ao excluir post:', err);
+      alert('Não foi possível excluir o post. Tente novamente.');
+    }
+  });
+}
+
 
   onSearch(term: string) {
     this.searchTerm$.next(term);
